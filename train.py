@@ -21,6 +21,7 @@ from utils import print_trainable_parameters, print_rank_0, to_device, set_rando
 from utils import DataCollator
 from peft import LoraConfig, get_peft_model
 from model import MODE
+import wandb
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -180,6 +181,8 @@ def main():
     model.train()
     tr_loss, logging_loss, min_loss = 0.0, 0.0, 0.0
     global_step = 0
+    wandb.login(key="613f55cae781fb261b18bad5ec25aa65766e6bc8")
+    wandb_logger = wandb.init(project="MyChatGLM", dir='.')
     # train
     for epoch in range(args.num_train_epochs):
         print_rank_0("Beginning of Epoch {}/{}, Total Micro Batches {}".format(epoch + 1, args.num_train_epochs,
@@ -197,6 +200,7 @@ def main():
                 global_step += 1
                 # write loss
                 if global_step % args.show_loss_step == 0:
+                    wandb_logger.log({"loss": (tr_loss - logging_loss) / (args.show_loss_step * args.gradient_accumulation_steps) })
                     print_rank_0("Epoch: {}, step: {}, global_step:{}, loss: {}".format(epoch, step + 1, global_step,
                                                                                         (tr_loss - logging_loss) /
                                                                                         (
